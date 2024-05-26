@@ -2910,7 +2910,8 @@ bool SurfaceFlinger::commit(PhysicalDisplayId pacesetterId,
         }
     }
 
-    if (pacesetterFrameTarget.wouldBackpressureHwc()) {
+    if (base::GetBoolProperty("persist.sys.phh.enable_sf_hwc_backpressure"s, true)
+            && pacesetterFrameTarget.isFramePending()) {
         if (mPropagateBackpressure && (mBackpressureGpuComposition || pacesetterFrameTarget.didMissHwcFrame())) {
             mScheduler->getVsyncSchedule()->getTracker().onFrameMissed(
                     pacesetterFrameTarget.expectedPresentTime());
