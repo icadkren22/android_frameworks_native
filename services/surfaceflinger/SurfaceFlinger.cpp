@@ -539,6 +539,9 @@ SurfaceFlinger::SurfaceFlinger(Factory& factory) : SurfaceFlinger(factory, SkipI
     mBackpressureGpuComposition = base::GetBoolProperty("debug.sf.enable_gl_backpressure"s, true);
     ALOGI_IF(mBackpressureGpuComposition, "Enabling backpressure for GPU composition");
 
+    mPropagateBackpressure = base::GetBoolProperty("persist.sys.phh.enable_sf_hwc_backpressure"s, false);
+    ALOGI_IF(!mPropagateBackpressure, "Disabling backpressure propagation");
+
     property_get("ro.surface_flinger.supports_background_blur", value, "0");
     bool supportsBlurs = atoi(value);
     mSupportsBlur = supportsBlurs;
@@ -2910,9 +2913,8 @@ bool SurfaceFlinger::commit(PhysicalDisplayId pacesetterId,
         }
     }
 
-    if (base::GetBoolProperty("persist.sys.phh.enable_sf_hwc_backpressure"s, true)
-            && pacesetterFrameTarget.isFramePending()) {
-        if (mPropagateBackpressure && (mBackpressureGpuComposition || pacesetterFrameTarget.didMissHwcFrame())) {
+    if (pacesetterFrameTarget.isFramePending()) {
+       if (mPropagateBackpressure && (mBackpressureGpuComposition || pacesetterFrameTarget.didMissHwcFrame())) {
             mScheduler->getVsyncSchedule()->getTracker().onFrameMissed(
                     pacesetterFrameTarget.expectedPresentTime());
             const Duration slack = TimePoint::now() - pacesetterFrameTarget.frameBeginTime();
