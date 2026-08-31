@@ -548,6 +548,10 @@ SurfaceFlinger::SurfaceFlinger(Factory& factory) : SurfaceFlinger(factory, SkipI
 
     property_get("ro.surface_flinger.supports_background_blur", value, "0");
     bool supportsBlurs = atoi(value);
+    std::string blurProp = base::GetProperty("persist.sys.phh.sf.background_blur"s, "");
+    if (blurProp == "disabled" || blurProp == "0" || blurProp == "false") {
+        supportsBlurs = false;
+    }
     mSupportsBlur = supportsBlurs;
     ALOGI_IF(!mSupportsBlur, "Disabling blur effects, they are not supported.");
 
