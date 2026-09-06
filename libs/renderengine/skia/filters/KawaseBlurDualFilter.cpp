@@ -136,7 +136,8 @@ void KawaseBlurDualFilter::blurInto(const sk_sp<SkSurface>& drawSurface, sk_sp<S
 
 sk_sp<SkImage> KawaseBlurDualFilter::generate(SkiaGpuContext* context, const uint32_t blurRadius,
                                               const sk_sp<SkImage> input,
-                                              const SkRect& blurRect) const {
+                                              const SkRect& blurRect,
+                                              uint64_t backgroundId) const {
     // Apply a conversion factor of (1 / sqrt(3)) to match Skia's built-in blur as used by
     // RenderEffect. See the comment in SkBlurMask.cpp for reasoning behind this.
     const float radius = blurRadius * 0.57735f;
@@ -155,6 +156,18 @@ sk_sp<SkImage> KawaseBlurDualFilter::generate(SkiaGpuContext* context, const uin
 
     const int targetWidth = ceil(static_cast<float>(blurRect.width()));
     const int targetHeight = ceil(static_cast<float>(blurRect.height()));
+
+    // Smart cache: If background layers and blur parameters are completely identical,
+    // reuse cached blur indefinitely (0 GPU blur passes during scrolling).
+    const bool isBackgroundIdentical = (mCachedImage != nullptr &&
+                                        backgroundId != 0 &&
+                                        backgroundId == mLastBackgroundId &&
+                                        blurRadius == mLastRadius &&
+                                        targetWidth == mLastWidth &&
+                                        targetHeight == mLastHeight);
+    if (isBackgroundIdentical) {
+        return mCachedImage;
+    }
 
     if (mCachedImage && elapsedMs < kMinIntervalMs &&
         targetWidth == mLastWidth && targetHeight == mLastHeight) {
@@ -224,6 +237,8 @@ sk_sp<SkImage> KawaseBlurDualFilter::generate(SkiaGpuContext* context, const uin
     mLastBlurTime = now;
     mLastWidth = targetWidth;
     mLastHeight = targetHeight;
+    mLastRadius = blurRadius;
+    mLastBackgroundId = backgroundId;
 
     return mCachedImage;
 }

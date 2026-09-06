@@ -43,7 +43,8 @@ public:
 
     // Execute blur, saving it to a texture
     sk_sp<SkImage> generate(SkiaGpuContext* context, const uint32_t radius,
-                            const sk_sp<SkImage> blurInput, const SkRect& blurRect) const override;
+                            const sk_sp<SkImage> blurInput, const SkRect& blurRect,
+                            uint64_t backgroundId = 0) const override;
 
 private:
     sk_sp<SkRuntimeEffect> mLowSampleBlurEffect;
@@ -53,6 +54,8 @@ private:
     mutable std::chrono::steady_clock::time_point mLastBlurTime;
     mutable int mLastWidth = 0;
     mutable int mLastHeight = 0;
+    mutable uint32_t mLastRadius = 0;
+    mutable uint64_t mLastBackgroundId = 0;
 
     void blurInto(const sk_sp<SkSurface>& drawSurface, const sk_sp<SkImage>& readImage,
                   const float radius, const float alpha, const sk_sp<SkRuntimeEffect>&) const;

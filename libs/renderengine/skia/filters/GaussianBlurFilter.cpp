@@ -47,7 +47,8 @@ GaussianBlurFilter::GaussianBlurFilter(RuntimeEffectManager& effectManager)
 
 sk_sp<SkImage> GaussianBlurFilter::generate(SkiaGpuContext* context, const uint32_t blurRadius,
                                             const sk_sp<SkImage> input,
-                                            const SkRect& blurRect) const {
+                                            const SkRect& blurRect,
+                                            uint64_t /* backgroundId */) const {
     // Create blur surface with the bit depth and colorspace of the original surface
     SkImageInfo scaledInfo = input->imageInfo().makeWH(std::ceil(blurRect.width() * kInputScale),
                                                        std::ceil(blurRect.height() * kInputScale));

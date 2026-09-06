@@ -942,6 +942,16 @@ void SkiaRenderEngine::drawLayersInternal(
         if (mBlurFilter && layerHasBlur(layer, ctModifiesAlpha)) {
             std::unordered_map<uint32_t, sk_sp<SkImage>> cachedBlurs;
 
+            uint64_t backgroundId = 0;
+            for (const auto& prevLayer : layers) {
+                if (&prevLayer == &layer) {
+                    break;
+                }
+                if (prevLayer.source.buffer.buffer) {
+                    backgroundId = backgroundId * 31 + prevLayer.source.buffer.buffer->getId();
+                }
+            }
+
             // rect to be blurred in the coordinate space of blurInput
             SkRect blurRect = canvas->getTotalMatrix().mapRect(bounds.rect());
 
@@ -995,7 +1005,7 @@ void SkiaRenderEngine::drawLayersInternal(
                 if (layer.backgroundBlurRadius > 0) {
                     SFTRACE_NAME("BackgroundBlur");
                     auto blurredImage = mBlurFilter->generate(context, layer.backgroundBlurRadius,
-                                                              blurInput, blurRect);
+                                                              blurInput, blurRect, backgroundId);
 
                     cachedBlurs[layer.backgroundBlurRadius] = blurredImage;
 
@@ -1010,7 +1020,7 @@ void SkiaRenderEngine::drawLayersInternal(
                         SFTRACE_NAME("BlurRegion");
                         cachedBlurs[region.blurRadius] =
                                 mBlurFilter->generate(context, region.blurRadius, blurInput,
-                                                      blurRect);
+                                                      blurRect, backgroundId);
                     }
 
                     mBlurFilter->drawBlurRegion(canvas, getBlurRRect(region), region.blurRadius,

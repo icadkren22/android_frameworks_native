@@ -165,7 +165,15 @@ void KawaseBlurDualFilterV2::blurInto(const sk_sp<SkSurface>& drawSurface, sk_sp
 
 sk_sp<SkImage> KawaseBlurDualFilterV2::generate(SkiaGpuContext* context, const uint32_t blurRadius,
                                                 const sk_sp<SkImage> input,
-                                                const SkRect& blurRect) const {
+                                                const SkRect& blurRect,
+                                                uint64_t backgroundId) const {
+    LOG_ALWAYS_FATAL_IF(context == nullptr, "%s: Needs GPU context", __func__);
+    LOG_ALWAYS_FATAL_IF(input == nullptr, "%s: Invalid input image", __func__);
+
+    if (blurRadius == 0) {
+        return input;
+    }
+
     // Apply a conversion factor of (1 / sqrt(3)) to match Skia's built-in blur as used by
     // RenderEffect. See the comment in SkBlurMask.cpp for reasoning behind this.
     const float radius = blurRadius * 0.57735f;
@@ -185,6 +193,18 @@ sk_sp<SkImage> KawaseBlurDualFilterV2::generate(SkiaGpuContext* context, const u
     const auto now = std::chrono::steady_clock::now();
     const auto elapsedMs =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - mLastBlurTime).count();
+
+    // Smart cache: If background layers and blur parameters are completely identical,
+    // reuse cached blur indefinitely (0 GPU blur passes during scrolling).
+    const bool isBackgroundIdentical = (mCachedImage != nullptr &&
+                                        backgroundId != 0 &&
+                                        backgroundId == mLastBackgroundId &&
+                                        blurRadius == mLastRadius &&
+                                        targetBlurRect.width() == mLastWidth &&
+                                        targetBlurRect.height() == mLastHeight);
+    if (isBackgroundIdentical) {
+        return mCachedImage;
+    }
 
     if (mCachedImage && elapsedMs < kMinIntervalMs &&
         targetBlurRect.width() == mLastWidth && targetBlurRect.height() == mLastHeight) {
@@ -252,6 +272,8 @@ sk_sp<SkImage> KawaseBlurDualFilterV2::generate(SkiaGpuContext* context, const u
     mLastBlurTime = now;
     mLastWidth = targetBlurRect.width();
     mLastHeight = targetBlurRect.height();
+    mLastRadius = blurRadius;
+    mLastBackgroundId = backgroundId;
 
     return mCachedImage;
 }
