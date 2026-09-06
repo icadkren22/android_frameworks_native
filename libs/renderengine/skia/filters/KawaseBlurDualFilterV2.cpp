@@ -180,6 +180,17 @@ sk_sp<SkImage> KawaseBlurDualFilterV2::generate(SkiaGpuContext* context, const u
     SkIRect targetBlurRect;
     blurRect.roundIn(&targetBlurRect);
 
+    // 20 FPS blur throttle: 1000ms / 20 = 50ms (skip 2 out of 3 frames at 60Hz)
+    constexpr int64_t kMinIntervalMs = 50;
+    const auto now = std::chrono::steady_clock::now();
+    const auto elapsedMs =
+            std::chrono::duration_cast<std::chrono::milliseconds>(now - mLastBlurTime).count();
+
+    if (mCachedImage && elapsedMs < kMinIntervalMs &&
+        targetBlurRect.width() == mLastWidth && targetBlurRect.height() == mLastHeight) {
+        return mCachedImage;
+    }
+
     auto makeSurface = [&](float scale) -> sk_sp<SkSurface> {
         const int newW =
                 std::max(1, static_cast<int>(static_cast<float>(targetBlurRect.width()) / scale));
@@ -237,7 +248,12 @@ sk_sp<SkImage> KawaseBlurDualFilterV2::generate(SkiaGpuContext* context, const u
                  std::min(1.0f, filterDepth - i), mUpSampleBlurEffect);
     }
 
-    return surfaces[0]->makeTemporaryImage();
+    mCachedImage = surfaces[0]->makeImageSnapshot();
+    mLastBlurTime = now;
+    mLastWidth = targetBlurRect.width();
+    mLastHeight = targetBlurRect.height();
+
+    return mCachedImage;
 }
 
 } // namespace skia

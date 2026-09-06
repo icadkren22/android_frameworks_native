@@ -24,14 +24,17 @@
 
 #include "RuntimeEffectManager.h"
 
+#include <chrono>
+
 namespace android {
 namespace renderengine {
 namespace skia {
 
 /**
- * This is an implementation of a Kawase blur with dual-filtering passes, as described in here:
- * https://community.arm.com/cfs-file/__key/communityserver-blogs-components-weblogfiles/00-00-00-20-66/siggraph2015_2D00_mmg_2D00_marius_2D00_slides.pdf
- * https://community.arm.com/cfs-file/__key/communityserver-blogs-components-weblogfiles/00-00-00-20-66/siggraph2015_2D00_mmg_2D00_marius_2D00_notes.pdf
+ * An algorithm for doing Kawase dual blur on GPUs using Skia.
+ *
+ * Kawase is an approximation of Gaussian blur, but behaves differently. It looks fine for
+ * not-too-blurry effects, but the results could visually degrade with larger radii.
  */
 class KawaseBlurDualFilter : public BlurFilter {
 public:
@@ -45,6 +48,11 @@ public:
 private:
     sk_sp<SkRuntimeEffect> mLowSampleBlurEffect;
     sk_sp<SkRuntimeEffect> mHighSampleBlurEffect;
+
+    mutable sk_sp<SkImage> mCachedImage;
+    mutable std::chrono::steady_clock::time_point mLastBlurTime;
+    mutable int mLastWidth = 0;
+    mutable int mLastHeight = 0;
 
     void blurInto(const sk_sp<SkSurface>& drawSurface, const sk_sp<SkImage>& readImage,
                   const float radius, const float alpha, const sk_sp<SkRuntimeEffect>&) const;

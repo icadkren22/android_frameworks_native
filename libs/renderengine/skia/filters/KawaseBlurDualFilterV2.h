@@ -24,6 +24,8 @@
 
 #include "RuntimeEffectManager.h"
 
+#include <chrono>
+
 namespace android {
 namespace renderengine {
 namespace skia {
@@ -48,6 +50,11 @@ private:
     sk_sp<SkRuntimeEffect> mQuarterResDownSampleBlurEffect;
     sk_sp<SkRuntimeEffect> mHalfResDownSampleBlurEffect;
     sk_sp<SkRuntimeEffect> mUpSampleBlurEffect;
+
+    mutable sk_sp<SkImage> mCachedImage;
+    mutable std::chrono::steady_clock::time_point mLastBlurTime;
+    mutable int mLastWidth = 0;
+    mutable int mLastHeight = 0;
 
     void blurInto(const sk_sp<SkSurface>& drawSurface, const sk_sp<SkImage>& readImage,
                   const float radius, const float alpha, const sk_sp<SkRuntimeEffect>&) const;
