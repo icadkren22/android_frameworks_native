@@ -143,7 +143,7 @@ sk_sp<SkImage> KawaseBlurDualFilter::generate(SkiaGpuContext* context, const uin
 
     // Use a variable number of blur passes depending on the radius. The non-integer part of this
     // calculation is used to mix the final pass into the second-last with an alpha blend.
-    constexpr int kMaxSurfaces = 3;
+    constexpr int kMaxSurfaces = 2;
     const float filterDepth = std::min(kMaxSurfaces - 1.0f, radius * kInputScale / 2.5f);
     const int filterPasses = std::min(kMaxSurfaces - 1, static_cast<int>(ceil(filterDepth)));
 
@@ -156,11 +156,10 @@ sk_sp<SkImage> KawaseBlurDualFilter::generate(SkiaGpuContext* context, const uin
         return surface;
     };
 
-    // Render into surfaces downscaled by 1x, 2x, and 4x from the initial downscale.
+    // Render into surfaces downscaled by 1x and 2x from the initial downscale.
     sk_sp<SkSurface> surfaces[kMaxSurfaces] =
             {filterPasses >= 0 ? makeSurface(1 * kInverseInputScale) : nullptr,
-             filterPasses >= 1 ? makeSurface(2 * kInverseInputScale) : nullptr,
-             filterPasses >= 2 ? makeSurface(4 * kInverseInputScale) : nullptr};
+             filterPasses >= 1 ? makeSurface(2 * kInverseInputScale) : nullptr};
 
     // These weights for scaling offsets per-pass are handpicked to look good at 1 <= radius <= 250.
     static const float kWeights[5] = {
