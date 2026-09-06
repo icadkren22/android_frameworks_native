@@ -95,7 +95,7 @@ const SkString kEffectSource_KawaseBlurDualFilter_HighSampleBlurEffect(R"(
 )");
 
 KawaseBlurDualFilter::KawaseBlurDualFilter(RuntimeEffectManager& effectManager)
-      : BlurFilter(effectManager) {
+      : BlurFilter(effectManager, /* maxCrossFadeRadius= */ 0.0f) {
     mLowSampleBlurEffect = effectManager.mKnownEffects[kKawaseBlurDualFilter_LowSampleBlurEffect];
     mHighSampleBlurEffect = effectManager.mKnownEffects[kKawaseBlurDualFilter_HighSampleBlurEffect];
 }

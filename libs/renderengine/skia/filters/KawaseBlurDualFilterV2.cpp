@@ -115,7 +115,7 @@ const SkString kEffectSource_KawaseBlurDualFilterV2_UpSampleBlurEffect(R"(
 )");
 
 KawaseBlurDualFilterV2::KawaseBlurDualFilterV2(RuntimeEffectManager& effectManager)
-      : BlurFilter(effectManager) {
+      : BlurFilter(effectManager, /* maxCrossFadeRadius= */ 0.0f) {
     mQuarterResDownSampleBlurEffect =
             effectManager.mKnownEffects[kKawaseBlurDualFilterV2_QuarterResDownSampleBlurEffect];
     mHalfResDownSampleBlurEffect =

@@ -37,7 +37,7 @@ public:
     // Downsample scale factor used to improve performance
     static constexpr float kInverseInputScale = 1.0f / kInputScale;
 
-    explicit BlurFilter(RuntimeEffectManager& effectManager, float maxCrossFadeRadius = 10.0f);
+    explicit BlurFilter(RuntimeEffectManager& effectManager, float maxCrossFadeRadius = 0.0f);
     virtual ~BlurFilter(){}
 
     // Execute blur, saving it to a texture
