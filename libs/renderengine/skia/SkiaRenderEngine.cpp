@@ -867,6 +867,19 @@ void SkiaRenderEngine::drawLayersInternal(
         }
     }
 
+    // Option A: Only apply background blur to the topmost layer requesting it.
+    // This prevents nested blurs (e.g. NotificationShade pulled over App Drawer)
+    // which cause texture-framebuffer feedback loops and flickering on mobile GPUs.
+    const LayerSettings* topmostBgBlurLayer = nullptr;
+    if (mBlurFilter) {
+        for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+            if (it->backgroundBlurRadius > 0) {
+                topmostBgBlurLayer = &(*it);
+                break;
+            }
+        }
+    }
+
     AutoSaveRestore surfaceAutoSaveRestore(canvas);
 
     if (mRenderDocCaptureNextFrame) {
@@ -939,7 +952,9 @@ void SkiaRenderEngine::drawLayersInternal(
         const auto [bounds, roundRectClip] =
                 getBoundsAndClip(layer.geometry.boundaries, layer.geometry.roundedCornersCrop,
                                  layer.geometry.roundedCornersRadii);
-        if (mBlurFilter && layerHasBlur(layer, ctModifiesAlpha)) {
+        const bool hasBgBlur = (layer.backgroundBlurRadius > 0 && &layer == topmostBgBlurLayer);
+        const bool hasRegions = (layer.blurRegions.size() > 0);
+        if (mBlurFilter && (hasBgBlur || hasRegions)) {
             std::unordered_map<uint32_t, sk_sp<SkImage>> cachedBlurs;
 
             uint64_t backgroundId = 0;
@@ -1002,7 +1017,7 @@ void SkiaRenderEngine::drawLayersInternal(
                     }
                 }
 
-                if (layer.backgroundBlurRadius > 0) {
+                if (hasBgBlur) {
                     SFTRACE_NAME("BackgroundBlur");
                     auto blurredImage = mBlurFilter->generate(context, layer.backgroundBlurRadius,
                                                               blurInput, blurRect, backgroundId);
